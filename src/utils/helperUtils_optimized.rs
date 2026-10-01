@@ -75,12 +75,14 @@ pub fn maximum_days_of_between_date_optimized(
     );
 
     let start = Utc.with_ymd_and_hms(year_input_start, month_input_start, day_input_start, 0, 0, 0)
+        .single()
         .unwrap_or_else(|| {
             error!("Invalid start date: {}-{}-{}", year_input_start, month_input_start, day_input_start);
             Utc::now()
         });
 
     let end = Utc.with_ymd_and_hms(year_input_end, month_input_end, day_input_end, 0, 0, 0)
+        .single()
         .unwrap_or_else(|| {
             error!("Invalid end date: {}-{}-{}", year_input_end, month_input_end, day_input_end);
             Utc::now()
@@ -126,7 +128,7 @@ pub fn utils_embedding_vec_dim_optimized(text: &str, dim_input: usize) -> Vec<f3
     let dim = dim_input;
     
     // Get buffer from pool or create new
-    let embedding = get_embedding_buffer(dim);
+    let mut embedding = get_embedding_buffer(dim);
     
     // Optimized byte processing
     let bytes = text.as_bytes();
@@ -219,8 +221,8 @@ pub fn text_similarity_optimized(text1: &str, text2: &str) -> f32 {
     
     // Calculate cosine similarity
     let dot_product: f32 = embedding1.iter().zip(embedding2.iter()).map(|(a, b)| a * b).sum();
-    let norm1: f32 = embedding1.iter().map(|a| a * a).sum().sqrt();
-    let norm2: f32 = embedding2.iter().map(|a| a * a).sum().sqrt();
+    let norm1: f32 = embedding1.iter().map(|a| a * a).sum::<f32>().sqrt();
+    let norm2: f32 = embedding2.iter().map(|a| a * a).sum::<f32>().sqrt();
     
     if norm1 == 0.0 || norm2 == 0.0 {
         0.0

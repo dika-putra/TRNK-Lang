@@ -57,7 +57,6 @@ impl From<std::io::Error>           for TruError { fn from(e: std::io::Error)   
 pub fn run_source(source: &str) -> TruResult<Value> {
     let program = Parser::parse(source)?;
     let mut interp = Interpreter::new();
-    stdlib::load(&interp_env_dummy()); // pre-load stdlib symbols
     let result = interp.run(&program)?;
     Ok(result)
 }
@@ -101,8 +100,10 @@ impl TruRepl {
     pub fn new() -> Self {
         let env = Env::new();
         stdlib::load(&env);
+        let mut interp = Interpreter::new();
+        interp.load_stdlib(&env);
         Self {
-            interp: Interpreter::new(),
+            interp,
             env,
             history: Vec::new(),
         }
@@ -142,9 +143,6 @@ impl Interpreter {
         self.exec_block(stmts, env)
     }
 }
-
-// Dummy helper — stdlib::load needs an &Env; we pass the real one from run_source
-fn interp_env_dummy() -> Env { Env::new() }
 
 // ─── Language info ────────────────────────────────────────────────────────────
 

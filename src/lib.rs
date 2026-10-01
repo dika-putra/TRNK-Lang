@@ -19,7 +19,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use warp::Rejection;
-use domain::models::routine::user::User;
 
 // Core modules
 pub mod utils;
@@ -144,10 +143,10 @@ mod tests {
 
     #[test]
     fn test_utility_functions() {
-        let time = utils::current_time();
+        let time = utils::helperUtils::current_time();
         assert!(!time.is_empty());
-        
-        let uuid = utils::uniqueIdUUID();
+
+        let uuid = utils::helperUtils::uniqueIdUUID();
         assert!(!uuid.is_empty());
     }
 }

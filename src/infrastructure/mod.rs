@@ -2,7 +2,6 @@
 //! 
 //! Contains infrastructure components for deployment and artifact management.
 
-pub mod data;
 pub mod copy_to_burnlm;
 pub mod upload_artifactory;
 

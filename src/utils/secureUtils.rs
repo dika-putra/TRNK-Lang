@@ -15,7 +15,7 @@ use crate::domain::models::routine::login::{LoginRequest, LoginResponse};
 use crate::{Users, WebResult};
 use crate::secure::auth;
 use crate::secure::error::Error::WrongCredentialsError;
-use auth::{Role};
+use auth::Role;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -33,7 +33,6 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use warp::{reply, Reply};
 use warp::{reject, Filter,Rejection};
-use auth::{with_auth};
 
 pub fn with_users(users : Users) -> impl Filter<Extract = (Users,), Error = Infallible> + Clone {
     warp::any().map(move ||  users.clone())

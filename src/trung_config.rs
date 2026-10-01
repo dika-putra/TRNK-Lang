@@ -573,10 +573,12 @@ mod tests {
     fn test_cargo_toml_generation() {
         let config = TrungConfig::default();
         let cargo_toml = config.generate_cargo_toml().unwrap();
-        
+
         assert!(cargo_toml.contains("[package]"));
         assert!(cargo_toml.contains("name = \"trung-project\""));
-        assert!(cargo_toml.contains("[dependencies]"));
-        assert!(cargo_toml.contains("[profile]"));
+        // `profile` only holds sub-tables, so toml emits no bare [profile] header.
+        // Same for `dependencies`: omitted entirely when the config has none.
+        assert!(cargo_toml.contains("[profile.release]"));
+        assert!(!cargo_toml.contains("[dependencies]"));
     }
 }

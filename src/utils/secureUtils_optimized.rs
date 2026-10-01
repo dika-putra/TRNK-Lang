@@ -16,11 +16,12 @@ use aes::cipher::generic_array::GenericArray;
 use aes_gcm::{Aes256Gcm, Nonce, Key, KeyInit};
 use base64::{Engine as _, engine::general_purpose};
 use rand::RngCore;
+use rand::rngs::OsRng;
 use crate::domain::models::routine::login::{LoginRequest, LoginResponse};
 use crate::{Users, WebResult};
 use crate::secure::auth;
 use crate::secure::error::Error::WrongCredentialsError;
-use auth::{Role};
+use auth::Role;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -35,7 +36,6 @@ use log::info;
 use redis::RedisResult;
 use warp::{reply, Reply};
 use warp::{reject, Filter, Rejection};
-use auth::with_auth;
 
 // Static cache for encryption key to avoid repeated environment variable reads
 static ENCRYPTION_KEY: OnceLock<Vec<u8>> = OnceLock::new();

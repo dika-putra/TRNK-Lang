@@ -160,7 +160,7 @@ impl TrungBuilder {
         // Run compiled program
         let mut cmd = Command::new("cargo");
         cmd.args(["run", "--bin", "trunk", "--"])
-            .arg(tru_file);
+            .arg(tru_file.as_ref());
         
         cmd.current_dir(&self.workspace_dir);
         

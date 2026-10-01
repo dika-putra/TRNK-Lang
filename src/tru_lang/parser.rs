@@ -86,6 +86,19 @@ impl Parser {
         } else { false }
     }
 
+    fn peek_at(&self, n: usize) -> &TokenKind {
+        &self.tokens[self.pos.saturating_add(n).min(self.tokens.len() - 1)].kind
+    }
+
+    /// `Ident {` is only a struct literal if the braces open a field list
+    /// (`field:`), never a block. Otherwise `while i < n { ... }` would parse
+    /// `n { ... }` as a literal.
+    fn at_struct_literal(&self) -> bool {
+        matches!(self.peek(), TokenKind::LBrace)
+            && matches!(self.peek_at(1), TokenKind::Ident(_))
+            && matches!(self.peek_at(2), TokenKind::Colon)
+    }
+
     fn eat_semicolons(&mut self) {
         while self.eat(&TokenKind::Semicolon) {}
     }
@@ -358,6 +371,40 @@ impl Parser {
         }
         self.expect(&TokenKind::RBrace)?;
         Ok(stmts)
+    }
+
+    /// Block in expression position: a trailing expression statement becomes the
+    /// block's value, so `if c { a } else { b }` works as an expression.
+    fn parse_block_expr(&mut self) -> PResult<Expr> {
+        let span = self.span();
+        self.expect(&TokenKind::LBrace)?;
+        let mut stmts = Vec::new();
+        let mut tail: Option<Box<Expr>> = None;
+        while !matches!(self.peek(), TokenKind::RBrace | TokenKind::Eof) {
+            self.eat_semicolons();
+            if matches!(self.peek(), TokenKind::RBrace) { break; }
+            // `if` is a statement keyword, but it also produces a value. Parse it
+            // as an expression so a trailing `if` can be the block's result.
+            if matches!(self.peek(), TokenKind::If) {
+                let e = self.parse_expr()?;
+                if matches!(self.peek(), TokenKind::RBrace) {
+                    tail = Some(Box::new(e));
+                    break;
+                }
+                stmts.push(Stmt::Expr(e));
+                continue;
+            }
+            let s = self.parse_stmt()?;
+            if matches!(self.peek(), TokenKind::RBrace) {
+                if let Stmt::Expr(e) = s {
+                    tail = Some(Box::new(e));
+                    break;
+                }
+            }
+            stmts.push(s);
+        }
+        self.expect(&TokenKind::RBrace)?;
+        Ok(Expr::Block(stmts, tail, span))
     }
 
     // ── types ─────────────────────────────────────────────────────────────────
@@ -635,7 +682,7 @@ impl Parser {
                 let name = name.clone();
                 self.advance();
                 // struct literal: Foo { field: val, ... }
-                if matches!(self.peek(), TokenKind::LBrace) {
+                if self.at_struct_literal() {
                     self.advance();
                     let mut fields = Vec::new();
                     while !matches!(self.peek(), TokenKind::RBrace | TokenKind::Eof) {
@@ -696,15 +743,9 @@ impl Parser {
             TokenKind::If => {
                 self.advance();
                 let cond = self.parse_expr()?;
-                let then_val = {
-                    let stmts = self.parse_block()?;
-                    Expr::Block(stmts, None, self.span())
-                };
+                let then_val = self.parse_block_expr()?;
                 self.expect(&TokenKind::Else)?;
-                let else_val = {
-                    let stmts = self.parse_block()?;
-                    Expr::Block(stmts, None, self.span())
-                };
+                let else_val = self.parse_block_expr()?;
                 Ok(Expr::If(Box::new(IfExpr { cond, then_val, else_val, span })))
             }
 
@@ -728,29 +769,7 @@ impl Parser {
                 Ok(Expr::Match(Box::new(MatchExpr { subject, arms, span })))
             }
 
-            TokenKind::LBrace => {
-                self.advance();
-                let mut stmts = Vec::new();
-                let mut tail: Option<Box<Expr>> = None;
-                while !matches!(self.peek(), TokenKind::RBrace | TokenKind::Eof) {
-                    self.eat_semicolons();
-                    if matches!(self.peek(), TokenKind::RBrace) { break; }
-                    let s = self.parse_stmt()?;
-                    // peek: if next is `}`, treat last expr as tail
-                    if matches!(self.peek(), TokenKind::RBrace) {
-                        if let Stmt::Expr(e) = s {
-                            tail = Some(Box::new(e));
-                            break;
-                        } else {
-                            stmts.push(s);
-                        }
-                    } else {
-                        stmts.push(s);
-                    }
-                }
-                self.expect(&TokenKind::RBrace)?;
-                Ok(Expr::Block(stmts, tail, span))
-            }
+            TokenKind::LBrace => self.parse_block_expr(),
 
             TokenKind::Print | TokenKind::Println => {
                 // treat as a call to builtin function
@@ -850,5 +869,35 @@ mod tests {
         let src = "if x > 0 { println(\"pos\"); } else { println(\"neg\"); }";
         let prog = Parser::parse(src).unwrap();
         assert!(matches!(prog.stmts[0], Stmt::If(_)));
+    }
+
+    #[test]
+    fn test_condition_ending_in_ident_is_not_struct_literal() {
+        let src = "while i < n { i += 1; }";
+        let prog = Parser::parse(src).unwrap();
+        match &prog.stmts[0] {
+            Stmt::While(w) => assert!(!matches!(w.cond, Expr::StructInit(..))),
+            other => panic!("expected while, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_struct_literal_still_parses() {
+        let src = "let p = Point { x: 1, y: 2 };";
+        let prog = Parser::parse(src).unwrap();
+        match &prog.stmts[0] {
+            Stmt::Let(l) => assert!(matches!(l.value, Some(Expr::StructInit(..)))),
+            other => panic!("expected let, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_trailing_if_is_block_value() {
+        // A trailing `if` inside a block must yield its value, even when nested.
+        let prog = Parser::parse("let x = if a { 1 } else { if b { 2 } else { 3 } };").unwrap();
+        match &prog.stmts[0] {
+            Stmt::Let(l) => assert!(matches!(l.value, Some(Expr::If(_)))),
+            other => panic!("expected let, got {:?}", other),
+        }
     }
 }

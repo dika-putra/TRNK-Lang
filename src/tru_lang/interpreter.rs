@@ -201,7 +201,7 @@ impl Interpreter {
         Ok(last)
     }
 
-    fn load_stdlib(&self, env: &Env) {
+    pub fn load_stdlib(&self, env: &Env) {
         for name in &["println", "print", "len", "push", "pop",
                       "to_str", "to_int", "to_float", "assert", "assert_eq",
                       "range", "type_of", "exit"] {
@@ -297,7 +297,7 @@ impl Interpreter {
         Ok(Value::Unit)
     }
 
-    fn exec_block(&mut self, stmts: &[Stmt], env: &Env) -> IResult {
+    pub fn exec_block(&mut self, stmts: &[Stmt], env: &Env) -> IResult {
         let mut last = Value::Unit;
         for s in stmts {
             last = self.exec_stmt(s, env)?;

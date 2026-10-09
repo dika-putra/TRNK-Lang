@@ -1,0 +1,7 @@
+// fetch — load raw data into the pipeline.
+// TODO: replace the stub with a real source (file, http, database).
+
+fn fetch_run(source: str) -> str {
+    println("fetch: reading " + source);
+    return "raw data from " + source;
+}

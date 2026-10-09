@@ -1,0 +1,8 @@
+// pipe — chain fetch -> train -> inference.
+// Module functions share one global scope, so each name carries its module prefix.
+
+fn pipe_run(source: str, input: str) -> str {
+    let data = fetch_run(source);
+    let model = train_run(data, 3);
+    return inference_run(model, input);
+}

@@ -1,0 +1,15 @@
+// {{name}} — entry point
+// Run: tru_id run src/main.tru
+
+use modules::fetch;
+use modules::train;
+use modules::inference;
+use modules::pipe;
+
+fn main() {
+    println("project: {{name}}");
+    let result = pipe_run("data/input.txt", "hello");
+    println("result: " + result);
+}
+
+main()

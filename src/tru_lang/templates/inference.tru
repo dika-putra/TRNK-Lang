@@ -1,0 +1,7 @@
+// inference — run the trained model on an input.
+// TODO: replace the stub with real prediction logic.
+
+fn inference_run(model: str, input: str) -> str {
+    println("inference: input " + input);
+    return "inference(" + model + ", " + input + ")";
+}

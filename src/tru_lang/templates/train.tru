@@ -1,0 +1,11 @@
+// train — fit a model on the fetched data.
+// TODO: replace the stub with a real training loop.
+
+fn train_run(data: str, epochs: int) -> str {
+    let mut epoch = 1;
+    while epoch <= epochs {
+        println("train: epoch " + to_str(epoch) + "/" + to_str(epochs));
+        epoch += 1;
+    }
+    return "model(" + data + ")";
+}

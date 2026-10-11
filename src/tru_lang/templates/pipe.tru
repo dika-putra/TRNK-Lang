@@ -3,6 +3,7 @@
 
 fn pipe_run(source: str, input: str) -> str {
     let data = fetch_run(source);
+    // TODO: take the epoch count from the project config.
     let model = train_run(data, 3);
     return inference_run(model, input);
 }

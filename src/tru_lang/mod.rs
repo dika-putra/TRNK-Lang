@@ -75,18 +75,23 @@ pub fn run_file<P: AsRef<Path>>(path: P) -> TruResult<Value> {
 // ponytail: textual include, one level, shared global scope, and error line numbers shift
 // after an include. Replace with a real module system (scoped `mod`, `a::b()` calls) when needed.
 fn expand_local_uses(source: &str, dir: &Path) -> std::io::Result<String> {
+    use std::io::{Error, ErrorKind};
     let mut out = String::with_capacity(source.len());
     for line in source.lines() {
-        let module = line
-            .trim()
-            .strip_prefix("use modules::")
-            .and_then(|rest| rest.strip_suffix(';'))
+        let Some(rest) = line.trim().strip_prefix("use modules::") else {
+            out.push_str(line);
+            out.push('\n');
+            continue;
+        };
+        let name = rest
+            .strip_suffix(';')
             .map(str::trim)
-            .filter(|name| !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
-        match module {
-            Some(name) => out.push_str(&std::fs::read_to_string(dir.join("modules").join(format!("{name}.tru")))?),
-            None => out.push_str(line),
-        }
+            .filter(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'))
+            .ok_or_else(|| Error::new(ErrorKind::InvalidInput, format!("invalid module import `{}`, expected `use modules::<name>;`", line.trim())))?;
+        let file = dir.join("modules").join(format!("{name}.tru"));
+        let text = std::fs::read_to_string(&file)
+            .map_err(|e| Error::new(e.kind(), format!("cannot load module {}: {e}", file.display())))?;
+        out.push_str(&text);
         out.push('\n');
     }
     Ok(out)

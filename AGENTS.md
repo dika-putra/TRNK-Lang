@@ -9,9 +9,13 @@ Rust-hosted programming language: lexer → parser → tree-walk interpreter,
 plus a transpiler that turns `.tru` source into Rust. It ships as a library
 (`tru_id_core`) and two binaries:
 
-- `tru_id` (`src/bin/main.rs`) — the CLI: `run`, `build`, `repl`, `check`, `version`.
+- `tru_id` (`src/bin/main.rs`) — the CLI: `run`, `build`, `repl`, `check`, `new`, `version`.
 - `tru_id_installer` (`src/bin/installer.rs`) — Windows installer that
   registers the `.tru` file extension.
+
+`use` is a no-op in the interpreter, with one exception: `run_file` replaces
+`use modules::<name>;` lines with the text of `modules/<name>.tru` next to the
+entry file (plain include, shared global scope). `tru_id new` relies on this.
 
 Everything else bolted onto the crate (database configs, JWT auth helpers,
 "AI/ML" model utilities under `domain`/`aimodels`/`models`) is a secondary,
@@ -52,7 +56,8 @@ src/
 ├── lib.rs                      # crate root, re-exports, prelude modules
 ├── bin/{main,installer}.rs     # the two real binaries
 ├── tru_lang/                   # the actual language: lexer, parser, ast,
-│                                 interpreter, compiler (.tru -> Rust), stdlib
+│                                 interpreter, compiler (.tru -> Rust), stdlib,
+│                                 scaffold.rs + templates/ (`tru_id new` boilerplate)
 ├── trunk_lang_core.rs          # runtime primitives (string interning, pools,
 │                                 perf metrics) used by tru_lang
 ├── trung_config.rs             # parses trunk.toml (an alternative, unused,

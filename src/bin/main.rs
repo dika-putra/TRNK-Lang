@@ -5,6 +5,7 @@
 //!   tru_id build <file.tru>          # transpile .tru → .rs
 //!   tru_id repl                      # interactive REPL
 //!   tru_id check <file.tru>          # parse + type-check only
+//!   tru_id new   <name>              # create a project boilerplate
 //!   tru_id version                   # show language version
 
 use std::io::{self, BufRead, Write};
@@ -17,6 +18,7 @@ fn main() {
         Some("build") => cmd_build(&args),
         Some("repl")  => cmd_repl(),
         Some("check") => cmd_check(&args),
+        Some("new")   => cmd_new(&args),
         Some("version") | Some("--version") | Some("-v") => cmd_version(),
         Some("help")  | Some("--help")      | Some("-h") => cmd_help(),
         _ => { cmd_help(); std::process::exit(1); }
@@ -36,6 +38,7 @@ fn cmd_help() {
     println!("  tru_id build <file.tru>    Transpile TRU → Rust (.rs)");
     println!("  tru_id repl                Interactive REPL");
     println!("  tru_id check <file.tru>    Parse and check without running");
+    println!("  tru_id new   <name>        Create a project with fetch/train/inference/pipe modules");
     println!("  tru_id version             Show version info");
 }
 
@@ -62,6 +65,20 @@ fn cmd_build(args: &[String]) {
     match tru_id_core::transpile_to_rs(path) {
         Ok(out) => println!("compiled → {}", out.display()),
         Err(e)  => { eprintln!("{}", e); std::process::exit(1); }
+    }
+}
+
+fn cmd_new(args: &[String]) {
+    let name = match args.get(2) {
+        Some(n) => n,
+        None => { eprintln!("error: expected a project name"); std::process::exit(1); }
+    };
+    match tru_id_core::new_project(name, std::path::Path::new(".")) {
+        Ok(root) => {
+            println!("created {}", root.display());
+            println!("next:\n  cd {}\n  tru_id run src/main.tru", name);
+        }
+        Err(e) => { eprintln!("error: {}", e); std::process::exit(1); }
     }
 }
 

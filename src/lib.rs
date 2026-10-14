@@ -68,7 +68,7 @@ pub use trunk_lang_core::*;
 pub use tru_lang::{run_source, run_file, transpile_source, transpile_file,
                    transpile_to_rs, TruRepl, TruError, TruResult,
                    Parser, Interpreter, Compiler, Value, Env,
-                   compile_tru, TRU_VERSION, TRU_EXTENSION, TRU_CRATE_NAME};
+                   compile_tru, new_project, TRU_VERSION, TRU_EXTENSION, TRU_CRATE_NAME};
 
 // Re-export TRUNg configuration
 pub use trung_config::*;
